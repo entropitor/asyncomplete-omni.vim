@@ -16,30 +16,30 @@ function! asyncomplete#sources#omni#completor(opt, ctx) abort
     let l:col = a:ctx['col']
     let l:typed = a:ctx['typed']
 
-    let l:startcol = s:safe_omnifunc(1, '')
-    if l:startcol < 0
-      return
-    elseif l:startcol > l:col
-      let l:startcol = l:col
-    endif
+    let l:kw = matchstr(l:typed, '\k\+$')
+    let l:kwlen = len(l:kw)
+    let l:startcol = l:col - l:kwlen
+
     let l:base = l:typed[l:startcol : l:col]
     let l:matches = s:safe_omnifunc(0, l:base)
-    call asyncomplete#complete(a:opt['name'], a:ctx, l:startcol + 1, l:matches)
+    call asyncomplete#complete(a:opt['name'], a:ctx, l:startcol, l:matches)
   catch
     call asyncomplete#log('omni', 'error', v:exception)
   endtry
 endfunction
 
-
 function! s:safe_omnifunc(...) abort
   let cursor = getpos('.')
   try
-    return call(&omnifunc, a:000)
+    if &omnifunc == 'v:lua.vim.lsp.omnifunc'
+      return v:lua.vim.lsp.omnifunc(a:1, a:2)
+    else
+      return call(&omnifunc, a:000)
+    endif
   finally
     call setpos('.', cursor)
   endtry
 endfunction
-
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
